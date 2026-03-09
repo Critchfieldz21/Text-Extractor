@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazor.Bootstrap" Version="3.4.0" />
+  </ItemGroup>
+
+  <!-- Reference the backend project for shared types -->
+  <ItemGroup>
+    <ProjectReference Include="../../Backend/TextExtractorBackend/TextExtractorBackend.csproj" />
+  </ItemGroup>
+
+</Project>

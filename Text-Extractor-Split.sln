@@ -1,0 +1,25 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.0.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextExtractorBackend", "Backend\TextExtractorBackend\TextExtractorBackend.csproj", "{8F7C1234-1234-1234-1234-123456789010}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TextExtractorUI", "Frontend\TextExtractorUI\TextExtractorUI.csproj", "{8F7C5678-5678-5678-5678-567890123456}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8F7C1234-1234-1234-1234-123456789010}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F7C1234-1234-1234-1234-123456789010}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F7C1234-1234-1234-1234-123456789010}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F7C1234-1234-1234-1234-123456789010}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F7C5678-5678-5678-5678-567890123456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F7C5678-5678-5678-5678-567890123456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F7C5678-5678-5678-5678-567890123456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F7C5678-5678-5678-5678-567890123456}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
