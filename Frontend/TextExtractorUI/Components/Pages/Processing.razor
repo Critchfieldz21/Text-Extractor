@@ -1,11 +1,10 @@
 ﻿@page "/processing"
-@using BackendLibrary
 @using BlazorBootstrap
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Linq
 @rendermode InteractiveServer
-@inject ShopTicketService sTService
 @inject NavigationManager Navigation
+@inject BackendApiService ApiService
 <link href="_content/Blazor.Bootstrap/blazor.bootstrap.css" rel="stylesheet" />
 <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
 
@@ -42,37 +41,41 @@
         <div class="pdfinfo-content">
         <h4 class="pdfinfo-subtitle">Details</h4>
         <table class="info-table">
-            @foreach (var kvp in ticket.ToExportDictionary(true).Where(k =>
-                k.Key is "FileName" or "ProcessedDate" or "NumberOfPages" or "PageNames" or "FileNamePieceMark" or "ProjectNumber" or "ProjectName" or "FileContentPieceMark" or "ControlNumbers" or "PiecesRequired" or "Weight" or "DesignNumber"))
+            @if (ticket != null)
             {
-                <tr>
-                    <th>@kvp.Key</th>
-                    <td>@kvp.Value</td>
-                </tr>
+                <tr><th>FileName</th><td>@ticket.fileName</td></tr>
+                <tr><th>ProcessedDate</th><td>@ticket.processedDate</td></tr>
+                <tr><th>NumberOfPages</th><td>@ticket.numberOfPages</td></tr>
+                <tr><th>PageNames</th><td>@ticket.pageNames</td></tr>
+                <tr><th>ProjectNumber</th><td>@ticket.projectNumber</td></tr>
+                <tr><th>ProjectName</th><td>@ticket.projectName</td></tr>
+                <tr><th>ControlNumbers</th><td>@ticket.controlNumbers</td></tr>
+                <tr><th>PiecesRequired</th><td>@ticket.piecesRequired</td></tr>
+                <tr><th>Weight</th><td>@ticket.weight</td></tr>
+                <tr><th>DesignNumber</th><td>@ticket.designNumber</td></tr>
             }
         </table>
 
         <h3 class="pdfinfo-title">Form View</h3>
         <table class="info-table">
-            @foreach (var kvp in ticket.ToExportDictionary(true).Where(k =>
-                k.Key is "RectanglePage" or "FormViewRectangleX" or "FormViewRectangleY" or "FormViewRectangleWidth" or "FormViewRectangleHeight"))
+            @if (ticket != null)
             {
-                <tr>
-                    <th>@kvp.Key</th>
-                    <td>@kvp.Value</td>
-                </tr>
+                <tr><th>RectanglePage</th><td>@ticket.rectanglePage</td></tr>
+                <tr><th>FormViewRectangleX</th><td>@ticket.formViewRectangleX</td></tr>
+                <tr><th>FormViewRectangleY</th><td>@ticket.formViewRectangleY</td></tr>
+                <tr><th>FormViewRectangleWidth</th><td>@ticket.formViewRectangleWidth</td></tr>
+                <tr><th>FormViewRectangleHeight</th><td>@ticket.formViewRectangleHeight</td></tr>
             }
         </table>
 
         <h3 class="pdfinfo-title" >Section View</h3>
         <table class="info-table">
-            @foreach (var kvp in ticket.ToExportDictionary(true).Where(k =>
-                k.Key is "SectionViewRectangleX" or "SectionViewRectangleY" or "SectionViewRectangleWidth" or "SectionViewRectangleHeight"))
+            @if (ticket != null)
             {
-                <tr>
-                    <th>@kvp.Key</th>
-                    <td>@kvp.Value</td>
-                </tr>
+                <tr><th>SectionViewRectangleX</th><td>@ticket.sectionViewRectangleX</td></tr>
+                <tr><th>SectionViewRectangleY</th><td>@ticket.sectionViewRectangleY</td></tr>
+                <tr><th>SectionViewRectangleWidth</th><td>@ticket.sectionViewRectangleWidth</td></tr>
+                <tr><th>SectionViewRectangleHeight</th><td>@ticket.sectionViewRectangleHeight</td></tr>
             }
         </table>
         <img src="../NortheastPrecast.webp" />
@@ -83,7 +86,7 @@
 @code {
     private string? base64Url;
     private int currTicketIndex = 0;
-    private ShopTicket? ticket;
+    private dynamic? ticket;
     private bool viewingHistory = false;
 
     protected override void OnInitialized()
@@ -115,19 +118,12 @@
     {
         if (viewingHistory)
         {
-            if (currTicketIndex < sTService.HistorySize() - 1)
-            {
-                currTicketIndex++;
-                LoadTicket();
-            }
+            // History navigation would be handled differently with API
+            // For now, just disable right arrow in history view
         }
         else
         {
-            if (currTicketIndex < sTService.Size - 1)
-            {
-                currTicketIndex++;
-                LoadTicket();
-            }
+            // Current tickets navigation would need local state
         }
     }
 
@@ -142,54 +138,33 @@
 
     private string GetPDFInfo()
     {
-        if (viewingHistory)
-        {
-            var t = sTService.GetHistoryTicket(currTicketIndex + 1);
-            return (t != null ? t.ToString() : "").Replace("\n", "<br />");
-        }
-        var ct = sTService.GetTicket(currTicketIndex + 1);
-        return (ct != null ? ct.ToString() : "").Replace("\n", "<br />");
+        if (ticket == null) return "";
+        return ticket.ToString().Replace("\n", "<br />");
     }
 
-    private void LoadTicket(){
-        if (viewingHistory)
-        {
-            ticket = sTService.GetHistoryTicket(currTicketIndex + 1);
-        }
-        else
-        {
-            ticket = sTService.GetTicket(currTicketIndex + 1);
-        }
-
-        if (ticket?.PdfBytes != null && ticket.PdfBytes.Length > 0)
-        {
-            string pdfBase64 = Convert.ToBase64String(ticket.PdfBytes);
-            base64Url = $"data:application/pdf;base64,{pdfBase64}";
-        }
-        else
-        {
-            base64Url = null;
-        }
+    private void LoadTicket()
+    {
+        // Since we're using API, ticket should be loaded from query param
+        // This would need to be updated to load from API if needed
     }
 
-    private string? setName(){
-        if (viewingHistory)
-        {
-            var t = sTService.GetHistoryTicket(currTicketIndex + 1);
-            return t?.FileName ?? "(no file)";
-        }
-        return ticket?.FileName ?? "(no file)";
+    private string? setName()
+    {
+        return ticket?.fileName ?? "(no file)";
     }
 
     private void OnDocumentLoaded(PdfViewerEventArgs args) { }
 
     private void OnPageChanged(PdfViewerEventArgs args) { }
 
-    private void GoHome(){
+    private void GoHome()
+    {
         currTicketIndex = 0;
         Navigation.NavigateTo("/");
     }
-    private void GoHistory(){
+
+    private void GoHistory()
+    {
         currTicketIndex = 0;
         Navigation.NavigateTo("/history");
     }

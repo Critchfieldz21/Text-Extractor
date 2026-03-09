@@ -1,4 +1,5 @@
 using TextExtractorUI.Components;
+using TextExtractorUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,11 +8,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddBlazorBootstrap();
 
-// Configure HTTP client for backend communication
+// Configure HTTP client for backend API communication
 var backendUrl = builder.Configuration["BackendUrl"] ?? "http://localhost:5000";
-builder.Services.AddHttpClient("Backend", client =>
+builder.Services.AddHttpClient<BackendApiService>(client =>
 {
     client.BaseAddress = new Uri(backendUrl);
+    client.Timeout = TimeSpan.FromSeconds(300); // 5 minute timeout for large PDF processing
 });
 
 var app = builder.Build();

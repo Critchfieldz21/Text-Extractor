@@ -10,9 +10,4 @@
     <PackageReference Include="Blazor.Bootstrap" Version="3.4.0" />
   </ItemGroup>
 
-  <!-- Reference the backend project for shared types -->
-  <ItemGroup>
-    <ProjectReference Include="../../Backend/TextExtractorBackend/TextExtractorBackend.csproj" />
-  </ItemGroup>
-
 </Project>

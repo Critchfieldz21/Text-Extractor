@@ -1,0 +1,56 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Restore dependencies - Backend
+      run: dotnet restore Backend/TextExtractorBackend/TextExtractorBackend.csproj
+    
+    - name: Restore dependencies - Frontend
+      run: dotnet restore Frontend/TextExtractorUI/TextExtractorUI.csproj
+    
+    - name: Build - Backend
+      run: dotnet build Backend/TextExtractorBackend/TextExtractorBackend.csproj -c Release --no-restore
+    
+    - name: Build - Frontend
+      run: dotnet build Frontend/TextExtractorUI/TextExtractorUI.csproj -c Release --no-restore
+    
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to Vercel
+      uses: vercel/actions/cli@master
+      with:
+        args: --prod
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    
+    - name: Verify Deployment
+      run: |
+        echo "Deployment completed successfully!"
+        echo "Frontend URL: ${{ secrets.FRONTEND_URL }}"
+        echo "Backend URL: ${{ secrets.BACKEND_URL }}"

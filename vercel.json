@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "buildCommand": "dotnet publish -c Release -o publish",
+  "outputDirectory": "publish",
+  "framework": "next",
+  "functions": {
+    "Backend/TextExtractorBackend/**.cs": {
+      "runtime": "dotnet9.0"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/"
+    }
+  ],
+  "env": [
+    "ASPNETCORE_ENVIRONMENT=Production",
+    "ASPNETCORE_URLS=http://localhost:3000"
+  ]
+}

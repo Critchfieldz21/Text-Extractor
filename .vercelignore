@@ -1,0 +1,12 @@
+.git
+.gitignore
+*.db
+*.sqlite
+node_modules
+.env.local
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo

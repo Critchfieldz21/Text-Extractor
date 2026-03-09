@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/TextExtractorBackend/Dockerfile
+    container_name: text-extractor-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+    volumes:
+      - backend-data:/app/data
+    networks:
+      - text-extractor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Frontend/TextExtractorUI/Dockerfile
+    container_name: text-extractor-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:3000
+      - BACKEND_URL=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - text-extractor-network
+
+volumes:
+  backend-data:
+
+networks:
+  text-extractor-network:
+    driver: bridge

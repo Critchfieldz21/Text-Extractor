@@ -1,18 +1,16 @@
 ﻿@page "/"
-@using BackendLibrary
 @using TextExtractorUI.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Threading.Tasks
 @using System.Diagnostics
 @using BlazorBootstrap;
+@using Microsoft.AspNetCore.Components;
 @rendermode InteractiveServer
 @inject NavigationManager Navigation
-@inject ShopTicketService sTService
-@inject DetectModelService dMService
 @inject IJSRuntime JS
 @inject ILogger<Home> Logger
-@inject ILoggerFactory loggerFactory;
-@inject SQL3cs.CustomerData Db
+@inject HttpClient HttpClient
+@inject BackendApiService ApiService
 
 <PageTitle>Home</PageTitle>
 
@@ -147,7 +145,7 @@
     private string processButtonClass => isProcessing ? "cancelbtn" : "processbtn";
     private Modal? modalError;
     private string modalErrorMessage = "An error occurred during PDF processing.";
-    private List<ShopTicket> tempList = new List<ShopTicket>();
+    private List<dynamic> tempList = new List<dynamic>();
     private bool wavesInitialized = false;
     private bool skipHeadingAnimation = false;
     private class ProcessingResult
@@ -307,12 +305,6 @@
     /// <returns>A task representing the asynchronous operation.</returns>
     private async Task OnPrimary()
     {
-        // clear any existing tickets
-        if (sTService.Size > 0)
-        {
-            sTService.ClearCurrentTickets();
-        }
-
         if (!isProcessing)
         {
             tempList.Clear();
@@ -325,7 +317,8 @@
 
                 try
                 {
-                    totalFiles = selectedFiles.GetMultipleFiles(fileLimit).Count;
+                    var files = selectedFiles.GetMultipleFiles(fileLimit);
+                    totalFiles = files.Count;
 
                     Logger.LogInformation("Starting processing of {FileCount} files.", totalFiles);
                     loadingMessage = totalFiles > 1
@@ -352,9 +345,7 @@
 
                 if (!cancelRequested)
                 {
-                    AddToDatabase();
-                    sTService.SetCurrentTicket(tempList.Cast<ShopTicket?>().ToList());
-                    Navigation.NavigateTo("/processing");
+                    // Navigation will happen after successful processing
                 }
             }
             else
@@ -368,7 +359,6 @@
             cancelRequested = true;
             isProcessing = false;
             buttonLabel = "Process";
-            // cancel current token
             StateHasChanged();
         }
     }
@@ -376,8 +366,6 @@
     
     /// <summary>
     /// Handles file selection and batch processing of uploaded PDFs.
-    /// Delegates work to helper methods for validation, reading, processing,
-    /// error handling, and finalization.
     /// </summary>
     /// <param name="e">The file change event containing selected files.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
@@ -387,7 +375,6 @@
         if (files.Count == 0) return;
 
         var initialProcessingCount = processingCards.Count;
-        int initialCurrentTickets = tempList.Count;
         string message = string.Empty;
 
         bool abortBatch = false;
@@ -414,26 +401,26 @@
                     try
                     {
                         Logger.LogInformation("Processing file: {FileName}", file.Name);
-                        var ticket = new ShopTicket(loggerFactory, file.Name, pdfBytes, dMService);
+                        var result = await ApiService.UploadAndProcessPdfAsync(file.Name, pdfBytes);
 
-                        // check cancellation before adding
-                        if (cancelRequested)
+                        if (result != null && result.Success)
                         {
-                            Logger.LogInformation("Process Cancelled While Processing : {FileName}", file.Name);
-                        }
-                        else
-                        {
-                            tempList.Add(ticket);
                             Logger.LogInformation("Successfully processed file: {FileName}", file.Name);
                             completedCount++;
                             pdfName = file.Name;
+                            tempList.Add(result);
+                        }
+                        else
+                        {
+                            message = result?.Message ?? "Unknown error";
+                            throw new Exception(message);
                         }
                     }
                     catch (Exception ex)
                     {
                         message = ex.Message;
                         Logger.LogError(ex.Message);
-                        if (ex.InnerException is ExtractionException)
+                        if (message.Contains("extraction", StringComparison.OrdinalIgnoreCase))
                         {
                             message += "<br /><br />Suggestion: Double-check if this file is a valid shop ticket PDF";
                         }
@@ -456,7 +443,7 @@
                     Status = cancelRequested ? "Cancelled" : string.IsNullOrEmpty(message) ? "Done" : "Error",
                     Message = message,
                     Timestamp = DateTime.Now,
-                    HistoryIndex = cancelRequested ? -1 : sTService.History.Count - 1
+                    HistoryIndex = -1
                 };
                 abortBatch = pr.Status.CompareTo("Error") == 0 ? true : cancelRequested;
                 processingCards.Insert(0, pr);
@@ -469,12 +456,7 @@
                     if (addedCards > 0){
                         processingCards.RemoveRange(0, addedCards);
                     }
-
-                    var addedTickets = tempList.Count - initialCurrentTickets;
-                    if (addedTickets > 0){
-                         tempList.Clear();
-                    }
-
+                    tempList.Clear();
                     await SaveProcessingCardsAsync();
 
                     isProcessing = false;
@@ -498,6 +480,12 @@
             modalErrorMessage = message;
             await (modalError?.ShowAsync() ?? Task.CompletedTask);
         }
+        else if (!cancelRequested && tempList.Count > 0)
+        {
+            // Successfully processed files - navigate to processing page
+            Navigation.NavigateTo("/processing");
+        }
+        
         loadingMessage = "";
         completedCount = 0;
         totalFiles = 0;
@@ -513,18 +501,5 @@
         await (modalError?.HideAsync() ?? Task.CompletedTask);
     }
 
-    /// <summary>
-    /// Adds the processed tickets in tempList to the database.
-    /// </summary>
-    private void AddToDatabase()
-    {
-        if(tempList.Count > 0){
-            foreach (var ticket in tempList)
-            {
-                Db.AddDataToTables(ticket);
-                Logger.LogInformation("Successfully saved file in database: {FileName}", ticket.FileName);
-            }
-        }
-    }
 
 }

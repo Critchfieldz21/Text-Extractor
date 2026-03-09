@@ -25,16 +25,22 @@ builder.Logging.AddSimpleConsole(options =>
 });
 
 // Enable CORS for frontend communication
+var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:3000";
+var corsOrigins = new[] { frontendUrl, "http://localhost:3000", "https://localhost:3001" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3001")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
     });
 });
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -61,6 +67,9 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 // API Endpoints
 app.MapGet("/api/export/{val}/{index}", (String val, int index, ShopTicketService sTService) =>
@@ -139,5 +148,82 @@ app.MapGet("/api/export/batch/{val}", (bool val, string? ids, ShopTicketService 
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 var preloadLogger = loggerFactory.CreateLogger<PreloadService>();
 PreloadService.PreloadPackages(preloadLogger);
+
+// Get processing history
+app.MapGet("/api/history", (ShopTicketService sTService) =>
+{
+    var history = sTService.History ?? new List<ShopTicket?>();
+    var response = history
+        .Where(t => t != null)
+        .Select((t, index) => new
+        {
+            id = index + 1,
+            fileName = t!.FileName,
+            processedDate = t!.dateTimeExtracted,
+            status = "Completed",
+            projectNumber = t.ProjectNumber,
+            projectName = t.ProjectName
+        })
+        .ToList();
+    return Results.Ok(response);
+});
+
+// Get specific ticket
+app.MapGet("/api/ticket/{id}", (int id, ShopTicketService sTService) =>
+{
+    var ticket = sTService.GetHistoryTicket(id);
+    if (ticket == null)
+        return Results.NotFound();
+
+    return Results.Json(new
+    {
+        id = id,
+        fileName = ticket.FileName,
+        projectNumber = ticket.ProjectNumber,
+        projectName = ticket.ProjectName,
+        designNumber = ticket.DesignNumber,
+        piecesRequired = ticket.PiecesRequired,
+        weight = ticket.Weight,
+        controlNumbers = ticket.ControlNumbers,
+        processedDate = ticket.dateTimeExtracted,
+        numberOfPages = ticket.NumberOfPages,
+        pageNames = ticket.PageNames
+    });
+});
+
+// Upload and process PDF
+app.MapPost("/api/upload", async (IFormFile file, ShopTicketService sTService, DetectModelService dMService, ILoggerFactory loggerFactory) =>
+{
+    if (file == null || file.Length == 0)
+        return Results.BadRequest("No file provided");
+
+    try
+    {
+        // Read file into memory
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var fileBytes = memoryStream.ToArray();
+
+        // Process PDF using backend services
+        var ticket = new ShopTicket(loggerFactory, file.FileName, fileBytes, dMService);
+        
+        // Add to history
+        sTService.History.Add(ticket);
+
+        return Results.Ok(new
+        {
+            success = true,
+            ticketId = sTService.History.Count,
+            fileName = file.FileName,
+            projectNumber = ticket.ProjectNumber,
+            projectName = ticket.ProjectName,
+            message = "File processed successfully"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { success = false, message = ex.Message });
+    }
+});
 
 app.Run();

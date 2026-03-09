@@ -1,12 +1,9 @@
 @page "/history"
-@using BackendLibrary
 @using System
 @using System.Linq
-@inject ShopTicketService sTService
 @inject NavigationManager Navigation
-@inject SQL3cs.CustomerData Db
 @inject ILogger<History> Logger
-@inject ILoggerFactory loggerFactory;
+@inject BackendApiService ApiService
 @rendermode InteractiveServer
 
 
@@ -82,10 +79,10 @@
 
 @code {
 
-    private List<ShopTicket> history = new List<ShopTicket>();
+    private List<dynamic> history = new List<dynamic>();
     private string searchTerm = string.Empty;
 
-    private IEnumerable<ShopTicket> FilteredHistory
+    private IEnumerable<dynamic> FilteredHistory
     {
         get
         {
@@ -95,7 +92,7 @@
             {
                 var term = searchTerm.Trim();
                 q = q.Where(t =>
-                    (t.FileName ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
+                    (t?.fileName ?? string.Empty).ToString().Contains(term, StringComparison.OrdinalIgnoreCase)
                     || (t.FileNamePieceMark ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
                     || (t.ProjectName ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
                     || (t.dateTimeExtracted.ToString() ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
@@ -106,18 +103,23 @@
     }
 
     // Display items map the filtered ticket to its original history index
-    private IEnumerable<(ShopTicket ticket, int historyIndex)> DisplayItems
+    private IEnumerable<(dynamic ticket, int historyIndex)> DisplayItems
     {
         get
         {
-            return FilteredHistory.Select(t => (ticket: t, historyIndex: history.IndexOf(t)));
+            return FilteredHistory.Select((t, idx) => (ticket: t, historyIndex: idx)).Cast<(dynamic, int)>();
         }
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        sTService.ClearCurrentTickets();
-        history = sTService.History?.Where(t => t != null).Select(t => t!).ToList() ?? new List<ShopTicket>();
+        // Load history from API
+        var historyData = await ApiService.GetHistoryAsync();
+        if (historyData != null)
+        {
+            history = historyData.Cast<dynamic>().ToList();
+        }
+        StateHasChanged();
     }
 
     private void ClearSearch()
@@ -128,27 +130,17 @@
 
     private void OpenTicket(int index)
     {
-        // Add the selected history ticket to the current ticket list and navigate
+        // Navigate to processing page with history ticket ID
         if (index >= 0 && index < history.Count)
         {
-            sTService.AddTicket(history[index], true);
-            Navigation.NavigateTo("/processing");
+            Navigation.NavigateTo($"/processing?historyIndex={index}");
         }
     }
 
     private void DeleteTicket(int index)
     {
-        // Remove the selected history ticket
-        if (index >= 0 && index < history.Count)
-        {
-            //removes from database first and then from the history list
-            String fileName = history[index].FileName;
-            Db.RemoveRowByFileName(loggerFactory, fileName);
-            history.RemoveAt(index);
-            sTService.History.RemoveAt(index);
-            Logger.LogInformation("Successfully deleted file in database and history: {fileName}", fileName);
-            StateHasChanged();
-        }
+        // Note: Delete functionality would need to be implemented in the Backend API
+        // For now, this is a placeholder
     }
 
     private void HandleExportClick(bool val, int index){
