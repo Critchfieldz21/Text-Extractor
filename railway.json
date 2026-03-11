@@ -1,4 +1,0 @@
-{
-  "builder": "dockerfile",
-  "dockerfilePath": "./Backend/TextExtractorBackend/Dockerfile"
-}
