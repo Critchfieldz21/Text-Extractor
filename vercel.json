@@ -2,11 +2,6 @@
   "version": 2,
   "buildCommand": "dotnet publish -c Release -o publish",
   "outputDirectory": "publish",
-  "functions": {
-    "Backend/TextExtractorBackend/**.cs": {
-      "runtime": "dotnet9.0"
-    }
-  },
   "routes": [
     {
       "src": "/(.*)",
