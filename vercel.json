@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "dotnet publish -c Release -o publish",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "publish",
   "routes": [
     {
