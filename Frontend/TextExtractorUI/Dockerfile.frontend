@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy project files
+# Copy project files (from root context)
 COPY ["Frontend/TextExtractorUI/TextExtractorUI.csproj", "Frontend/TextExtractorUI/"]
 
 # Restore dependencies
