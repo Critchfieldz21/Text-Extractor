@@ -1,6 +1,4 @@
 {
-  "build": {
-    "builder": "dockerfile",
-    "dockerfile": "Backend/TextExtractorBackend/Dockerfile"
-  }
+  "builder": "dockerfile",
+  "dockerfilePath": "./Backend/TextExtractorBackend/Dockerfile"
 }

@@ -30,6 +30,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Copy ONNX model files
+COPY ["Backend/TextExtractorBackend/Services/Models/", "Services/Models/"]
+
 # Create data directory for SQLite
 RUN mkdir -p /app/data
 
