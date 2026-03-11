@@ -3,7 +3,6 @@ WORKDIR /src
 
 # Copy project files
 COPY ["Frontend/TextExtractorUI/TextExtractorUI.csproj", "Frontend/TextExtractorUI/"]
-COPY ["Backend/TextExtractorBackend/TextExtractorBackend.csproj", "Backend/TextExtractorBackend/"]
 
 # Restore dependencies
 RUN dotnet restore "Frontend/TextExtractorUI/TextExtractorUI.csproj"
