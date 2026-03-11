@@ -1,0 +1,35 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["Frontend/TextExtractorUI/TextExtractorUI.csproj", "Frontend/TextExtractorUI/"]
+COPY ["Backend/TextExtractorBackend/TextExtractorBackend.csproj", "Backend/TextExtractorBackend/"]
+
+# Restore dependencies
+RUN dotnet restore "Frontend/TextExtractorUI/TextExtractorUI.csproj"
+
+# Copy all source code
+COPY . .
+
+# Build the project
+WORKDIR "/src/Frontend/TextExtractorUI"
+RUN dotnet build "TextExtractorUI.csproj" -c Release -o /app/build
+
+# Publish the project
+FROM build AS publish
+RUN dotnet publish "TextExtractorUI.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
+
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+EXPOSE 3000
+
+ENV ASPNETCORE_URLS=http://+:3000
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_EnableDiagnostics=0
+ENV BackendUrl=https://text-extractor-production-9ba5.up.railway.app
+
+ENTRYPOINT ["dotnet", "TextExtractorUI.dll"]
