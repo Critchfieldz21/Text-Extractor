@@ -3,7 +3,6 @@ WORKDIR /src
 
 # Copy project files
 COPY ["Frontend/TextExtractorUI/TextExtractorUI.csproj", "Frontend/TextExtractorUI/"]
-COPY ["Backend/TextExtractorBackend/TextExtractorBackend.csproj", "Backend/TextExtractorBackend/"]
 
 # Restore dependencies
 RUN dotnet restore "Frontend/TextExtractorUI/TextExtractorUI.csproj"
@@ -30,5 +29,6 @@ EXPOSE 3000
 ENV ASPNETCORE_URLS=http://+:3000
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_EnableDiagnostics=0
+ENV BackendUrl=https://text-extractor-production-9ba5.up.railway.app
 
 ENTRYPOINT ["dotnet", "TextExtractorUI.dll"]
