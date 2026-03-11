@@ -68,6 +68,9 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
 
+// Root endpoint
+app.MapGet("/", () => Results.Json(new { message = "Text Extractor Backend API", status = "running", version = "1.0" }));
+
 // Health check endpoint
 app.MapHealthChecks("/health");
 
